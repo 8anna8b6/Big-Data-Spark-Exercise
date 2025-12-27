@@ -1,0 +1,21 @@
+import sys
+from pyspark import SparkContext, SparkConf
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: count_words_in_line <bucket_name>", file=sys.stderr)
+        sys.exit(-1)
+
+    conf = SparkConf().setAppName("count_words_in_line")
+    sc = SparkContext(conf=conf)
+
+    path = "s3a://" + sys.argv[1] + "/*.txt"
+    text_file = sc.textFile(path)
+
+    result = text_file.map(lambda line: (len(line.split()), line)) \
+                      .reduce(lambda a, b: a if a[0] > b[0] else b)
+
+    print("--------------------------------------------")
+    print(f"Biggest number of words in a line: {result[0]}")
+    print(f"The line content: {result[1]}")
+    print("--------------------------------------------")
