@@ -1,0 +1,25 @@
+import sys
+from pyspark import SparkContext, SparkConf
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: longestword <bucket_name>", file=sys.stderr)
+        sys.exit(-1)
+
+    conf = SparkConf().setAppName("longest-word-finder")
+    sc = SparkContext(conf=conf)
+
+    path = "s3a://" + sys.argv[1] + "/*.txt"
+    text_file = sc.textFile(path)
+
+    words_rdd = text_file.flatMap(lambda line: line.split(" "))
+
+    clean_words = words_rdd.map(lambda word: word.strip(".,")) \
+                           .filter(lambda word: word.isalpha() and len(word) > 0)
+
+    longest_word = clean_words.reduce(lambda a, b: a if len(a) > len(b) else b)
+
+    print("--------------------------------------------")
+    print(f"The longest word is: {longest_word}")
+    print(f"Length: {len(longest_word)}")
+    print("--------------------------------------------")
